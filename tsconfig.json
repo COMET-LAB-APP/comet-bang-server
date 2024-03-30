@@ -1,0 +1,23 @@
+{
+    "files": [
+        "./main.ts",
+        "./healthcheck.ts",
+        "./get_user.ts",
+        "./create_card_type.ts",
+        "join_function.ts",
+        "leave_stream.ts",
+        "send_stream.ts",
+        "listen_stream.ts",
+    ],
+    "compilerOptions": {
+        "target": "es5",
+        "typeRoots": [
+            "./node_modules"
+        ],
+        "outFile": "./build/index.js",
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true
+    }
+}

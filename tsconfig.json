@@ -8,6 +8,13 @@
         "leave_stream.ts",
         "send_stream.ts",
         "listen_stream.ts",
+        "set_session.ts",
+        "before_hook.ts",
+        "match_handler.ts",
+        "create_match.ts",
+        "lobby_match_state.ts",
+        "register_before_auth_email.ts",
+        "match_rpc.ts"
     ],
     "compilerOptions": {
         "target": "es5",

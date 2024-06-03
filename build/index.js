@@ -7,12 +7,20 @@ var leaveStreamId = "leaveStream";
 var listenStreamId = "listenStream";
 var sendStreamId = "sendStream";
 var rpcIdFindMatch = "findMatchNew";
+var lobbyMatchId = "'LobbyMatch'";
+var createMatchNew = "createMatchNew";
+var channelJoin = "ChannelJoin";
+var sendEmailVerifyId = "sendEmailVerify";
+var confirmVerifyEmailId = "confirmVerifyEmail";
+var checkVerifyEmailId = "checkVerifyEmail";
 function InitModule(ctx, logger, nk, initialize) {
     initialize.registerBeforeAuthenticateEmail(registerBeforeAuthenticateEmail);
+    initialize.registerAfterAuthenticateEmail(sendVerificationEmailFn);
     initialize.registerMatchmakerMatched(OnRegisterMatchmakerMatched);
     initialize.registerRpc(rpcIdFindMatch, findOrCreateMatch);
-    // initialize.registerRtBefore;
-    // initialize.registerRtAfter;
+    initialize.registerRpc(sendEmailVerifyId, sendVerifyEmailRpc);
+    initialize.registerRpc(confirmVerifyEmailId, confirmVerifyEmailRpc);
+    initialize.registerRpc(checkVerifyEmailId, checkEmailVerifyRpc);
     initialize.registerRpc(rpcHealthCheckId, rpcHealthCheck);
     initialize.registerRpc(getUserId, getUserById);
     initialize.registerRpc(createCardTypeId, createCardType);
@@ -21,9 +29,9 @@ function InitModule(ctx, logger, nk, initialize) {
     initialize.registerRpc(leaveStreamId, leaveFunction);
     initialize.registerRpc(listenStreamId, listenStream);
     initialize.registerRpc(sendStreamId, sendStream);
-    initialize.registerRtBefore("ChannelJoin", beforeChannelJoin);
-    initialize.registerRpc("createMatchNew", CreateMatchRpc);
-    initialize.registerMatch('LobbyMatch', {
+    initialize.registerRtBefore(channelJoin, beforeChannelJoin);
+    initialize.registerRpc(createMatchNew, CreateMatchRpc);
+    initialize.registerMatch(lobbyMatchId, {
         matchInit: matchInit,
         matchJoinAttempt: matchJoinAttempt,
         matchJoin: matchJoin,
@@ -73,12 +81,8 @@ function joinFunction(ctx, logger, nk, payload) {
     };
     var hidden = false;
     var persistence = false;
-    // var presence = nk.streamUserList({ mode: 1, subject: ctx.userId });
-    // // Just reassigning the context here, as it's used in the streamUserUpdate method
-    // var sessionId;
-    //  presence.forEach((d) => logger.debug(d.sessionId));
-    logger.debug("joinFunction  " + ctx.userId + "| Seession " + ctx.sessionId + "| streamId " + streamId);
-    nk.streamUserJoin(ctx.userId, ctx.sessionId, streamId, hidden, persistence);
+    logger.info("joinFunction  " + ctx.userId + "| Seession " + ctx.sessionId + "| streamId " + streamId);
+    nk.streamUserJoin(ctx.userId, "a00f7822-ea40-4536-87a0-704b3767fab7", streamId, hidden, persistence);
 }
 function leaveFunction(ctx, logger, nk, payload) {
     var streamId = {
@@ -102,7 +106,7 @@ function listenStream(ctx, logger, nk, payload) {
     };
     var presences = nk.streamUserList(streamId);
     presences === null || presences === void 0 ? void 0 : presences.forEach(function (p) {
-        logger.info('Found user: %s\n', p);
+        logger.info('Found user: %s\n', streamId);
     });
 }
 var setSessionVars = function (context, logger, nk, payload) {
@@ -153,7 +157,7 @@ var matchJoinAttempt = function (ctx, logger, nk, dispatcher, tick, state, prese
 var matchJoin = function (ctx, logger, nk, dispatcher, tick, state, presences) {
     for (var _i = 0, presences_1 = presences; _i < presences_1.length; _i++) {
         var presence = presences_1[_i];
-        state.players[presence.userId] = { presence: presence };
+        state.players[presence.userId] = { presence: presence, isReady: false };
         state.playerCount++;
     }
     ;
@@ -190,9 +194,16 @@ var matchLoop = function (ctx, logger, nk, dispatcher, tick, state, messages) {
     if (state.emptyTicks >= 100) {
         return null;
     }
+    // TODO: here need to create loop for game play 
     return {
         state: state
     };
+};
+var matchTerminate = function (ctx, logger, nk, dispatcher, tick, state, graceSeconds) {
+    return { state: state };
+};
+var matchSignal = function (ctx, logger, nk, dispatcher, tick, state) {
+    return { state: state };
 };
 var OnRegisterMatchmakerMatched = function (ctx, logger, nk, matches) {
     // Create a public match and return it's match ID
@@ -200,10 +211,6 @@ var OnRegisterMatchmakerMatched = function (ctx, logger, nk, matches) {
     logger.debug("Created LobbyMatch with ID: ".concat(matchId));
     return matchId;
 };
-// function rpcCreateMatch(context: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, payload: string): string {
-//     var matchId = nk.matchCreate('pingpong', [payload]);
-//     return JSON.stringify({ matchId });
-//   }
 var CreateMatchRpc = function (ctx, logger, nk, payload) {
     // Assume the match will be public by default
     var isPrivate = false;
@@ -218,12 +225,6 @@ var CreateMatchRpc = function (ctx, logger, nk, payload) {
     var matchId = nk.matchCreate("LobbyMatch", { isPrivate: isPrivate });
     return JSON.stringify({ matchId: matchId });
 };
-var matchTerminate = function (ctx, logger, nk, dispatcher, tick, state, graceSeconds) {
-    return { state: state };
-};
-var matchSignal = function (ctx, logger, nk, dispatcher, tick, state) {
-    return { state: state };
-};
 var GameState;
 (function (GameState) {
     GameState[GameState["WaitingForPlayers"] = 0] = "WaitingForPlayers";
@@ -232,52 +233,138 @@ var GameState;
 })(GameState || (GameState = {}));
 var registerBeforeAuthenticateEmail = function (ctx, logger, nk, req) {
     logger.info("login received ".concat(req.username, " ").concat(req.account.email, " ").concat(req.account.password));
+    // TODO: handle something while authenticate via email
     return req;
 };
-// let rpcFindMatch: nkruntime.RpcFunction = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, payload: string): string {
-//     if (!ctx.userId) {
-//         throw Error('No user ID in context');
-//     }
-//     if (!payload) {
-//         throw Error('Expects payload.');
-//     }
-//     let request;
-//     try {
-//         request = JSON.parse(payload);
-//     } catch (error) {
-//         logger.error('Error parsing json message: %q', error);
-//         throw error;
-//     }
-//     if(request.ai) {
-//         let matchId = nk.matchCreate(
-//             "LobbyMatch", {fast: request.fast, ai: true});
-//         let res = { matchIds: [matchId] };
-//         return JSON.stringify(res);
-//     }
-//     let matches: nkruntime.Match[];
-//     try {
-//         const query = `+label.open:1 +label.fast:${request.fast ? 1 : 0}`;
-//         matches = nk.matchList(10, true, null, null, 1, query);
-//     } catch (error) {
-//         logger.error('Error listing matches: %v', error);
-//         throw error;
-//     }
-//     logger.info("matches length " , matches.length )
-//     let matchIds: string[] = [];
-//     if (matches.length > 0) {
-//         // There are one or more ongoing matches the user could join.
-//         matchIds = matches.map(m => m.matchId);
-//     } else {
-//         // No available matches found, create a new one.
-//         try {
-//             matchIds.push(nk.matchCreate("LobbyMatch", {fast: request.fast}));
-//         } catch (error) {
-//             logger.error('Error creating match: %v', error);
-//             throw error;
-//         }
-//     }
-//     return JSON.stringify({ matchIds });
-// }
+var sendVerificationEmailFn = function (ctx, logger, nk, data, req) {
+    var baseUrl = "https://3fee-115-84-115-164.ngrok-free.app";
+    var apiUrl = "".concat(baseUrl, "/sendVerifyEmail");
+    logger.info("login status ".concat(data.created, " received ").concat(apiUrl, " ").concat(ctx.userId, " ").concat(req.username, " ").concat(req.account.email, " ").concat(req.account.password));
+    if (data.created) {
+        // If this is true, the account was created for the first time.
+        // User Third party service to send verification email here.
+        var code = generateVerificationCode(6);
+        var payload = JSON.stringify({ email: req.account.email, code: code });
+        var response = nk.httpRequest(apiUrl, 'post', { 'content-type': 'application/json' }, payload);
+        if (response.code > 299) {
+            logger.error("API error: ".concat(response.body));
+            return JSON.stringify({ error: response.body });
+        }
+        var storageObjects = [{
+                collection: "email_verify",
+                key: "authentication_email",
+                value: { email: req.account.email, verify: false, code: code },
+                userId: ctx.userId,
+            }];
+        logger.info("login received ".concat(storageObjects, " ").concat(code, " "));
+        nk.storageWrite(storageObjects);
+        // const dataReponse = JSON.parse(response.body);
+        // logger.info(`sendVerificationEmailFn API response: ${dataReponse}`)
+        return JSON.stringify({ status: 401, message: "go to verify email" });
+    }
+    else {
+        var keys = [{
+                collection: "email_verify",
+                key: "authentication_email",
+                userId: ctx.userId // assuming you want to fetch data for the current user
+            }];
+        logger.info("confirmVerifyEmailRpc UserId ".concat(ctx.userId));
+        var objects = nk.storageRead(keys);
+        if (objects.length === 0) {
+            logger.info("not found");
+            return JSON.stringify({ success: false, message: "No data found.", status: 404 });
+        }
+        logger.info("verify is : ".concat(objects[0].value.verify));
+        if (objects[0].value.verify == false) {
+            var code = generateVerificationCode(6);
+            var storageObjects = [{
+                    collection: "email_verify",
+                    key: "authentication_email",
+                    value: { email: req.account.email, verify: false, code: code },
+                    userId: ctx.userId,
+                }];
+            var payload = JSON.stringify({ email: req.account.email, code: code });
+            var response = nk.httpRequest(apiUrl, 'post', { 'content-type': 'application/json' }, payload);
+            if (response.code > 299) {
+                logger.error("API error: ".concat(response.body));
+                return JSON.stringify({ error: response.body });
+            }
+            logger.info("login received ".concat(storageObjects, " ").concat(code, " "));
+            nk.storageWrite(storageObjects);
+        }
+    }
+};
+function generateVerificationCode(length) {
+    var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    var result = '';
+    for (var i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+function sendVerifyEmailRpc(context, logger, nk, payload) {
+    var baseUrl = "https://3fee-115-84-115-164.ngrok-free.app";
+    // const apiUrl = "`https://api.restful-api.dev/objects`"
+    var apiUrl = "".concat(baseUrl, "/sendVerifyEmail");
+    logger.info("login received ".concat(apiUrl));
+    var req = JSON.parse(payload);
+    var code = generateVerificationCode(6);
+    var newpayload = JSON.stringify({ email: req.email, code: code });
+    var response = nk.httpRequest(apiUrl, 'post', { 'content-type': 'application/json' }, newpayload);
+    if (response.code > 299) {
+        logger.error("API error: ".concat(response.body));
+        return JSON.stringify({ error: response.body });
+    }
+    var dataReponse = JSON.parse(response.body);
+    logger.info("data API response: ".concat(dataReponse));
+    return JSON.stringify({ message: "send successful" });
+}
+function confirmVerifyEmailRpc(context, logger, nk, payload) {
+    var req = JSON.parse(payload);
+    var keys = [{
+            collection: "email_verify",
+            key: "authentication_email",
+            userId: context.userId // assuming you want to fetch data for the current user
+        }];
+    logger.info("confirmVerifyEmailRpc UserId ".concat(context.userId));
+    var objects = nk.storageRead(keys);
+    if (objects.length === 0) {
+        return JSON.stringify({ success: false, message: "No data found.", status: 404 });
+    }
+    var storageObjects = objects[0];
+    var value = storageObjects.value;
+    var verifyCode = value.code;
+    if (verifyCode === req.code) {
+        storageObjects.value = { email: storageObjects.value.email, verify: true, };
+        storageObjects.permissionRead = 1;
+        storageObjects.permissionWrite = 1;
+        // logger.info(`confirmVerifyEmailRpc data: ${storageObjects}`)
+        nk.storageWrite([storageObjects]);
+        return JSON.stringify({ success: true, message: "Verify Successful", status: 200 });
+    }
+    else {
+        logger.info("Verify Failed ".concat(req.code));
+        return JSON.stringify({ success: false, message: "Verify Failed", status: 400 });
+    }
+}
+function checkEmailVerifyRpc(context, logger, nk, payload) {
+    var keys = [{
+            collection: "email_verify",
+            key: "authentication_email",
+            userId: context.userId // assuming you want to fetch data for the current user
+        }];
+    var objects = nk.storageRead(keys);
+    if (objects.length === 0) {
+        return JSON.stringify({ isVerify: false, message: "No data found.", status: 404 });
+    }
+    var storageObjects = objects[0];
+    if (storageObjects.value.verify === false) {
+        return JSON.stringify({ isVerify: false, message: "need to verify email", status: 400 });
+    }
+    else {
+        return JSON.stringify({ isVerify: true, message: "this accounts already verify", status: 200 });
+    }
+}
 function findOrCreateMatch(context, logger, nk) {
     var limit = 10;
     var isAuthoritative = true;

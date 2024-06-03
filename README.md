@@ -1,5 +1,7 @@
 # SETUP PROJECT 
 
+## set up module 
+npm install
 ###  complie script 
  run with `npx tsc`
 

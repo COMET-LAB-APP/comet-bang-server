@@ -10,7 +10,28 @@ interface State extends nkruntime.MatchState{
 
 interface PlayerState {
   presence: nkruntime.Presence,
-  isReady: boolean
+  isReady: boolean,
+  position ?: number,
+  charactor ?: Charactor,
+  role ?: Role,
 }
 
-enum GameState { WaitingForPlayers, WaitingForPlayersReady, InProgress }
+
+enum GameState { WaitingForPlayers, WaitingForPlayersReady, InialtGame , InProgress , EndGame, }
+
+
+enum ActionState { EffectPhase, DrawPhase, MainPhase, AttackPhase , SecondPhase, EndPhase}
+
+
+// retrive data from databse 
+interface Role {
+  id: number,
+  name: string,
+  description ?: string,
+}
+
+interface Charactor {
+  id: number,
+  name: string,
+  description ?: string,
+}

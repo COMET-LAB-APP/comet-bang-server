@@ -17,7 +17,7 @@ interface PlayerState {
 }
 
 
-enum GameState { WaitingForPlayers, WaitingForPlayersReady, InialtGame , InProgress , EndGame, }
+enum GameState { WaitingForPlayers, WaitingForPlayersReady, InitialGame , InProgress , EndGame, }
 
 
 enum ActionState { EffectPhase, DrawPhase, MainPhase, AttackPhase , SecondPhase, EndPhase}

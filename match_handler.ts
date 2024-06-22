@@ -133,13 +133,13 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
       }
       // if allReady == true it's mean every one confirm ready 
       if(isAllReady){
-        state.gameState = GameState.InialtGame;
+        state.gameState = GameState.InitialGame;
         // send update to all player update
         dispatcher.broadcastMessage(OpCode.JOIN_GAME, JSON.stringify( { gameState:  state.gameState , description : "GameState InialtGame"}) )
       }
     }
 
-    if (state.gameState == GameState.InialtGame){
+    if (state.gameState == GameState.InitialGame){
       var roleUsedNumbers : number[] = []; 
       var positionUsed : number[] = [];
       var charactorUsed : number[] = [];

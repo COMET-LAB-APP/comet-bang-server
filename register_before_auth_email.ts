@@ -1,4 +1,4 @@
-
+const baseUrl = "https://6867-103-43-76-14.ngrok-free.app";
 const registerBeforeAuthenticateEmail: nkruntime.BeforeHookFunction<nkruntime.AuthenticateEmailRequest> = (ctx, logger, nk, req) => {
     logger.info(`login received ${req.username} ${req.account.email} ${req.account.password}`)
     // TODO: handle something while authenticate via email
@@ -6,7 +6,6 @@ const registerBeforeAuthenticateEmail: nkruntime.BeforeHookFunction<nkruntime.Au
   }
 
 const sendVerificationEmailFn: nkruntime.AfterHookFunction<nkruntime.Session, nkruntime.AuthenticateEmailRequest> = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, data: nkruntime.Session, req: nkruntime.AuthenticateEmailRequest) {
-  const baseUrl = "https://3fee-115-84-115-164.ngrok-free.app";
   const apiUrl = `${baseUrl}/sendVerifyEmail`
   logger.info(`login status ${data.created} received ${apiUrl} ${ctx.userId} ${req.username} ${req.account.email} ${req.account.password}`)
   if (data.created) {
@@ -81,7 +80,7 @@ function generateVerificationCode(length: number): string {
 
 function sendVerifyEmailRpc(context: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, payload: string): string {
 
-  const baseUrl = "https://3fee-115-84-115-164.ngrok-free.app";
+ 
   //TODO: create base Url to config 
   const apiUrl = `${baseUrl}/sendVerifyEmail`
   logger.info(`login received ${apiUrl}`)

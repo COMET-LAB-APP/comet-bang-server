@@ -130,8 +130,8 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
     if (state.gameState == GameState.InitialGame){
       var roleUsedNumbers : number[] = []; 
       var positionUsed : number[] = [];
-      var charactorUsed : number[] = [];
-      // random Role position and charactor
+      var characterUsed : number[] = [];
+      // random Role position and character
       for (const userId in state.players) {
         if (state.players.hasOwnProperty(userId)) {
           // Generate a random number between 0 and 6
@@ -145,10 +145,10 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
              positionUsed.push(postion)
            }
 
-           var charactorNumber = getRandomNumber(0, 6, charactorUsed);
-           var charactor = charactors[charactorNumber];
-           charactorUsed.push(charactorNumber)
-           state.players[userId] = {...state.players[userId], role : role, position : postion, charactor : charactor }
+           var characterNumber = getRandomNumber(0, 6, characterUsed);
+           var character = characters[characterNumber];
+           characterUsed.push(characterNumber)
+           state.players[userId] = {...state.players[userId], role : role, position : postion, character : character }
         }
         logger.info(`statePlayer: userId ${userId} ${state.players[userId]}`)
       }

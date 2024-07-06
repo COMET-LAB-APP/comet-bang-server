@@ -32,6 +32,9 @@ const OpCode = {
   LEAVE_GAME: 11,
 };
 
+const MAX_PLAYERS = 7; 
+const MIN_PLAYERS = 2;
+
 const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, params: {[key: string]: string}): {state: nkruntime.MatchState, tickRate: number, label: string} {
   // Determine if the match should be private based on the passed in params
   const isPrivate = params.isPrivate === "true";  
@@ -41,7 +44,7 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
     players: {},
     isPrivate,
     playerCount: 0,
-    requiredPlayerCount: 2,
+    requiredPlayerCount: MAX_PLAYERS,
     gameState: GameState.WaitingForPlayers,
     emptyTicks: 0,
     joinsInProgress : 0
@@ -75,9 +78,14 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
       state.playerCount++;
     };
     
+    if (state.playerCount === MIN_PLAYERS){
+      // TODO : Add more logic for using add Bots
+      addBotsIfNeeded(state,logger);
+    }
     
     // If the match is full then update the state
     if (state.playerCount === state.requiredPlayerCount) {
+      logger.info(`is Ready call Herre : ${state}`)
       state.gameState = GameState.WaitingForPlayersReady;
       dispatcher.broadcastMessage(OpCode.JOIN_GAME, JSON.stringify({ gameState:  state.gameState , readyCount: 0 ,  description : "GameState WaitingForPlayersReady"}) )
     }
@@ -106,7 +114,7 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
   const matchLoop = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, dispatcher: nkruntime.MatchDispatcher, tick: number, state: nkruntime.MatchState, messages: nkruntime.MatchMessage[]) : { state: nkruntime.MatchState} | null {
     // If the match is empty, increment the empty ticks
     
-    logger.info("start match loop " + state.emptyTicks)
+    logger.info("start match loop " + state.emptyTicks + "player count " + state.playerCount)
     if (state.playerCount === 0) {
       state.emptyTicks++;
     } else {
@@ -162,6 +170,7 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
            charactorUsed.push(charactorNumber)
            state.players[userId] = {...state.players[userId], role : role, position : postion, charactor : charactor }
         }
+        logger.info(`statePlayer: userId ${userId} ${state.players[userId]}`)
       }
       state.gameState = GameState.InProgress;
       dispatcher.broadcastMessage(OpCode.START_GAME , JSON.stringify(state))
@@ -194,6 +203,7 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
   } 
 
   let matchTerminate: nkruntime.MatchTerminateFunction = function(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, dispatcher: nkruntime.MatchDispatcher, tick: number, state: nkruntime.MatchState, graceSeconds: number) {
+    state.playerCount--;
     return { state };
   }
   
@@ -219,3 +229,12 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
     return randomNumber;
   }
   
+  function addBotsIfNeeded(state: nkruntime.MatchState,  logger: nkruntime.Logger,) {
+    while (state.playerCount < MAX_PLAYERS) {
+      state.playerCount++;
+      const botId = `bot_${state.playerCount}`;
+      const botPresence = { userId: botId, sessionId: botId, username: botId, node: "" } as nkruntime.Presence;
+      state.players[botId] = { presence: botPresence, isReady : true , isBot: true };
+      logger.info(`##bot: ${state.players[botId]}`)
+    }
+  }

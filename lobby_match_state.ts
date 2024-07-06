@@ -12,7 +12,7 @@ interface PlayerState {
   presence: nkruntime.Presence,
   isReady: boolean,
   position ?: number,
-  charactor ?: Charactor,
+  character ?: Character,
   role ?: Role,
   // missing blood
 }
@@ -38,7 +38,7 @@ interface Role {
   type: RoleType
 }
 
-interface Charactor {
+interface Character {
   id: number,
   name: string,
   description ?: string,
@@ -55,7 +55,7 @@ const roles: Role[] = [
   { id: 7, name: "Guest", description: "Limited access to view content.", type: RoleType.Killer }
 ];
 
-const charactors: Charactor[] = [
+const charactors: Character[] = [
   { id: 1, name: "Bear", description: "Bear is responsible for managing the system. As the backbone of the team, Bear ensures that everything runs smoothly and efficiently." },
   { id: 2, name: "Monkey", description: "Monkey can edit and publish content. Agile and creative, Monkey brings fresh ideas and keeps the content engaging and up-to-date." },
   { id: 3, name: "Fox", description: "Fox can view content but cannot make changes. With a keen eye for detail, Fox ensures that all content meets the highest standards of quality." },

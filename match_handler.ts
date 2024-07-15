@@ -3,10 +3,10 @@ const OpCode = {
   READY_GAME: 2,
   START_GAME: 3,
   END_GAME: 4,
-  PLAYER_MOVE: 5,
+  PLAYER_DRAW: 5,
   PLAYER_ATTACK: 6,
   PLAYER_DEFEND: 7,
-  PLAYER_CHAT: 8,
+  PLAYER_TARGET: 8,
   GAME_STATE_UPDATE: 9,
   PING: 10,
   LEAVE_GAME: 11,
@@ -14,6 +14,7 @@ const OpCode = {
 
 const MAX_PLAYERS = 7; 
 const MIN_PLAYERS = 2;
+const BLOOD_AMOUNT = 5;
 
 const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, params: {[key: string]: string}): {state: nkruntime.MatchState, tickRate: number, label: string} {
   // Determine if the match should be private based on the passed in params
@@ -148,7 +149,10 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
            var characterNumber = getRandomNumber(0, 6, characterUsed);
            var character = characters[characterNumber];
            characterUsed.push(characterNumber)
-           state.players[userId] = {...state.players[userId], role : role, position : postion, character : character }
+           
+           // intial cards 
+           var cards = generateCards(5,mockCards);
+           state.players[userId] = {...state.players[userId], role : role, position : postion, character : character,blood: BLOOD_AMOUNT, cards : cards} 
         }
         logger.info(`statePlayer: userId ${userId} ${state.players[userId]}`)
       }
@@ -172,7 +176,16 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
           } catch (error) {
             logger.info(`message of User ${senderId} is ${error}.`)
           }
-          
+        case OpCode.PLAYER_DRAW : 
+         //TODO : implement logic player draw
+         break
+        case OpCode.PLAYER_ATTACK : 
+          //TODO : implement logic player attack
+         break;
+         case OpCode.PLAYER_DEFEND : 
+          //TODO : implement logic player defend
+         break;
+   
       }
     }
     
@@ -217,4 +230,16 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
       state.players[botId] = { presence: botPresence, isReady : true , isBot: true };
       logger.info(`##bot: ${state.players[botId]}`)
     }
+  }
+  
+  // generate card for start game 
+  function generateCards(cardCount : number, cardData: Card[]) : Card[]{
+    var randomCards : Card[] = [];
+    const min = 0;
+    const max = cardData.length - 1;
+    for (let i = 0; i < cardCount; i++) {
+      var randomNumber = Math.floor(Math.random() * (max - min + 1)) + min;
+      randomCards.push(cardData[randomNumber])
+    }
+    return randomCards;
   }

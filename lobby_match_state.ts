@@ -14,7 +14,8 @@ interface PlayerState {
   position ?: number,
   character ?: Character,
   role ?: Role,
-  // missing blood
+  blood ?: number,
+  cards : Card[]
 }
 
 
@@ -28,6 +29,10 @@ enum RoleType {
   Good, 
   Bad, 
   Killer 
+}
+
+enum CardTypes {
+   Attack, Defense, Heal , GlobalAttack , GlobalHeal
 }
 
 // retrive data from databse 
@@ -44,6 +49,13 @@ interface Character {
   description ?: string,
 }
 
+interface Card {
+  name : string,
+  type : CardTypes,
+  damage ?: number,
+  heal ?: number,
+  defense ?: number,
+}
 
 const roles: Role[] = [
   { id: 1, name: "Admin", description: "Responsible for managing the system.", type: RoleType.Leader },
@@ -63,4 +75,108 @@ const characters: Character[] = [
   { id: 5, name: "Cheetar", description: "Cheetar can moderate user comments and content. Fast and vigilant, Cheetar ensures that the community stays positive and respectful by moderating interactions." },
   { id: 6, name: "Bird", description: "Bird can view and analyze data. With a bird's-eye view, Bird provides insightful analysis and helps make data-driven decisions to guide the team." },
   { id: 7, name: "Porcupine", description: "Porcupine has limited access to view content. Though limited in scope, Porcupine's perspective is valuable, offering unique insights from a different angle." }
+];
+
+// mocking card data 
+const mockCards: Card[] = [
+  {
+    name: "Quick Slash",
+    type: CardTypes.Attack,
+    damage: 1
+  },
+  {
+    name: "Heavy Blow",
+    type: CardTypes.Attack,
+    damage: 2
+  },
+  {
+    name: "Light Shield",
+    type: CardTypes.Defense,
+    defense: 1
+  },
+  {
+    name: "Iron Wall",
+    type: CardTypes.Defense,
+    defense: 2
+  },
+  {
+    name: "Minor Heal",
+    type: CardTypes.Heal,
+    heal: 1
+  },
+  {
+    name: "Major Heal",
+    type: CardTypes.Heal,
+    heal: 2
+  },
+  {
+    name: "Meteor Strike",
+    type: CardTypes.GlobalAttack,
+    damage: 1
+  },
+  {
+    name: "Earth Shatter",
+    type: CardTypes.GlobalAttack,
+    damage: 2
+  },
+  {
+    name: "Group Recovery",
+    type: CardTypes.GlobalHeal,
+    heal: 1
+  },
+  {
+    name: "Mass Restoration",
+    type: CardTypes.GlobalHeal,
+    heal: 2
+  },
+  {
+    name: "Swift Jab",
+    type: CardTypes.Attack,
+    damage: 1
+  },
+  {
+    name: "Power Punch",
+    type: CardTypes.Attack,
+    damage: 2
+  },
+  {
+    name: "Guard Up",
+    type: CardTypes.Defense,
+    defense: 1
+  },
+  {
+    name: "Fortify",
+    type: CardTypes.Defense,
+    defense: 2
+  },
+  {
+    name: "First Aid",
+    type: CardTypes.Heal,
+    heal: 1
+  },
+  {
+    name: "Rejuvenate",
+    type: CardTypes.Heal,
+    heal: 2
+  },
+  {
+    name: "Flame Burst",
+    type: CardTypes.GlobalAttack,
+    damage: 1
+  },
+  {
+    name: "Thunderstorm",
+    type: CardTypes.GlobalAttack,
+    damage: 2
+  },
+  {
+    name: "Healing Wave",
+    type: CardTypes.GlobalHeal,
+    heal: 1
+  },
+  {
+    name: "Life Circle",
+    type: CardTypes.GlobalHeal,
+    heal: 2
+  }
 ];

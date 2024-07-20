@@ -21,12 +21,12 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
   const isPrivate = params.isPrivate === "true";  
 
   // Define the match state
-  const state: State = {
+  const state: GameState = {
     players: {},
     isPrivate,
     playerCount: 0,
     requiredPlayerCount: MAX_PLAYERS,
-    gameState: GameState.WaitingForPlayers,
+    gameState: GameStateEnum.WaitingForPlayers,
     emptyTicks: 0,
     joinsInProgress : 0
   };
@@ -67,7 +67,7 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
     // If the match is full then update the state
     if (state.playerCount === state.requiredPlayerCount) {
       logger.info(`is Ready call Herre : ${state}`)
-      state.gameState = GameState.WaitingForPlayersReady;
+      state.gameState = GameStateEnum.WaitingForPlayersReady;
       dispatcher.broadcastMessage(OpCode.JOIN_GAME, JSON.stringify({ gameState:  state.gameState , readyCount: 0 ,  description : "GameState WaitingForPlayersReady"}) )
     }
   
@@ -109,7 +109,7 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
 
     // TODO: here need to create loop for game play 
     // check all player ready 
-    if (state.gameState == GameState.WaitingForPlayersReady) {
+    if (state.gameState == GameStateEnum.WaitingForPlayersReady) {
       var isAllReady = true;
       for (const userId in state.players) {
         if (state.players.hasOwnProperty(userId)) {
@@ -122,13 +122,13 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
       }
       // if allReady == true it's mean every one confirm ready 
       if(isAllReady){
-        state.gameState = GameState.InitialGame;
+        state.gameState = GameStateEnum.InitialGame;
         // send update to all player update
         dispatcher.broadcastMessage(OpCode.JOIN_GAME, JSON.stringify( { gameState:  state.gameState , description : "GameState InialtGame"}) )
       }
     }
 
-    if (state.gameState == GameState.InitialGame){
+    if (state.gameState == GameStateEnum.InitialGame){
       var roleUsedNumbers : number[] = []; 
       var positionUsed : number[] = [];
       var characterUsed : number[] = [];
@@ -156,7 +156,7 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
         }
         logger.info(`statePlayer: userId ${userId} ${state.players[userId]}`)
       }
-      state.gameState = GameState.InProgress;
+      state.gameState = GameStateEnum.InProgress;
       dispatcher.broadcastMessage(OpCode.START_GAME , JSON.stringify(state))
     }
  

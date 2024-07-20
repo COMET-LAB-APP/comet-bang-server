@@ -7,6 +7,12 @@ RUN npm install
 
 COPY tsconfig.json . 
 COPY *.ts .
+
+COPY src/enums/* ./src/enums/
+COPY src/states/* ./src/states/
+COPY src/const/* ./src/const/
+COPY src/entities/* ./src/entities/
+
 RUN npx tsc
 
 

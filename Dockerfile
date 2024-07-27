@@ -11,7 +11,7 @@ COPY *.ts .
 COPY src/enums/* ./src/enums/
 COPY src/states/* ./src/states/
 COPY src/const/* ./src/const/
-COPY src/entities/* ./src/entities/
+COPY src/model/* ./src/model/
 
 RUN npx tsc
 

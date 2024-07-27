@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "build" : "tsc",
-    "dev" : "nodemon ./build/index.js",
-    "start-dev" : "tsc && yarn dev"
+    "build": "tsc",
+    "dev": "nodemon ./build/index.js",
+    "start-dev": "tsc && yarn dev"
   },
   "keywords": [],
   "author": "",

@@ -4,3 +4,4 @@ enum RoleType {
     Bad, 
     Killer 
   }
+  

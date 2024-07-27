@@ -1,0 +1,1 @@
+enum GameStateEnum { WaitingForPlayers, WaitingForPlayersReady, InitialGame , InProgress , EndGame, }

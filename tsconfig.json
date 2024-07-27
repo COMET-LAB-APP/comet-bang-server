@@ -8,6 +8,21 @@
         "leave_stream.ts",
         "send_stream.ts",
         "listen_stream.ts",
+        "set_session.ts",
+        "before_hook.ts",
+        "match_handler.ts",
+        "create_match.ts",
+        "register_before_auth_email.ts",
+        "match_rpc.ts",
+        "src/enums/action_state_enum.ts",
+        "src/enums/card_type_enum.ts",
+        "src/enums/game_state_enum.ts",
+        "src/enums/role_type_enum.ts",
+        "src/const/characters.ts",
+        "src/const/card_constant.ts",
+        "src/const/role_constant.ts",
+        "src/states/game_state.ts",
+        "src/states/player_state.ts",
     ],
     "compilerOptions": {
         "target": "es5",
@@ -18,6 +33,7 @@
         "strict": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
-        "forceConsistentCasingInFileNames": true
-    }
+        "forceConsistentCasingInFileNames": true,
+    },
+    "include": ["src/**/*"],
 }

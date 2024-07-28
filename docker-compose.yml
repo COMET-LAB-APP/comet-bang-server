@@ -42,6 +42,8 @@ services:
       - "7350:7350"
       - "7351:7351"
     restart: unless-stopped
+    volumes:
+      - ./local.yml:/nakama/data/local.yml
 
 volumes:
   data:

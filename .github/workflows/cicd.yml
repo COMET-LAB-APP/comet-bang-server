@@ -27,10 +27,15 @@ jobs:
         with: 
           username: ${{secrets.DOCKERHUB_USERNAME}}
           password: ${{secrets.DOCKERHUB_PASSWORD}}
+
+      # get latest commit hash
+      - name: Get latest commit hash
+        id: commit
+        run: echo "::set-output name=hash::$(git rev-parse --short HEAD)"
       
       # build and push docker image 
       - name: Push Docker Image to Docker Hub
         uses: docker/build-push-action@v5
         with: 
           push: true
-          tags: santa124/ror-game-server:latest
+          tags: santa124/ror-game-server:${{steps.commit.outputs.hash}}

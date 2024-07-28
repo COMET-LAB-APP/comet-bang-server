@@ -1,3 +1,5 @@
+name: "nakama"
+data_dir: "./data"
 logger:
   level: "DEBUG"
 runtime:

@@ -51,5 +51,5 @@ jobs:
             docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_PASSWORD }}
             docker rm -f ror-game-server || true
             docker pull santa124/ror-game-server:${{steps.commit.outputs.hash}}
-            docker run -d --name ror-game-server -p 8080:8080 santa124/ror-game-server:${{steps.commit.outputs.hash}}
+            docker run -d --name ror-game-server -p 7349:7349 -p 7350:7350 -p 7351:7351 santa124/ror-game-server:${{steps.commit.outputs.hash}}
           

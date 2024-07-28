@@ -39,3 +39,16 @@ jobs:
         with: 
           push: true
           tags: santa124/ror-game-server:${{steps.commit.outputs.hash}}
+      
+      #deploy docker and run on remote host 
+      - name: Run docker container on Remote host 
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.DEV_ROR_HOST }}
+          username: ${{ secrets.DEV_ROR_USERNAME}}
+          key: ${{ secrets.DEV_ROR_KEY }}
+          script: | 
+            docker rm -f ror-game-server || true
+            docker pull santa124/ror-game-server:${{steps.commit.outputs.hash}}
+            docker run -d --name ror-game-server -p 8080:8080 santa124/ror-game-server:${{steps.commit.outputs.hash}}
+          

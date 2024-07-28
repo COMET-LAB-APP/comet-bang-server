@@ -48,6 +48,7 @@ jobs:
           username: ${{ secrets.DEV_ROR_USERNAME}}
           key: ${{ secrets.DEV_ROR_KEY }}
           script: | 
+            docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_PASSWORD }}
             docker rm -f ror-game-server || true
             docker pull santa124/ror-game-server:${{steps.commit.outputs.hash}}
             docker run -d --name ror-game-server -p 8080:8080 santa124/ror-game-server:${{steps.commit.outputs.hash}}

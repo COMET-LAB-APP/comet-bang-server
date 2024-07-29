@@ -13,6 +13,12 @@ services:
       - "8080:8080"
     volumes:
       - data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
   nakama:
     image: santa124/nakama:3.22.0
@@ -41,6 +47,6 @@ services:
       - "7351:7351"
     volumes:
       - ./local.yml:/nakama/data/local.yml
-
+    restart: unless-stopped
 volumes:
   data:

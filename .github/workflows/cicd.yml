@@ -44,7 +44,12 @@ jobs:
           docker build -t santa124/nakama:3.22.0 -f Dockerfile .
           docker push santa124/postgres:12.2-alpine
           docker push santa124/nakama:3.22.0
-      
+
+      - name: Verify files exist before SCP
+        run: |
+          ls -l docker-compose.deploy.yml
+          ls -l local.yml
+          
       # Copy docker compose deploy and local yml file to server
       - name: Copy files via SSH
         uses: appleboy/scp-action@v0.1.7
@@ -52,7 +57,7 @@ jobs:
           host: ${{ secrets.DEV_ROR_HOST }}
           username: ${{ secrets.DEV_ROR_USERNAME}}
           key: ${{ secrets.DEV_ROR_KEY }}
-          source: "./docker-compose.deploy.yml ./local.yml"
+          source: "./docker-compose.deploy.yml, ./local.yml"
           target: "/root/"
       
       #deploy docker and run on remote host 

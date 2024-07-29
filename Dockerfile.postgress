@@ -1,0 +1,11 @@
+FROM postgres:12.2-alpine
+
+CMD ["postgres", "-c", "shared_preload_libraries=pg_stat_statements", "-c", "pg_stat_statements.track=all"]
+
+ENV POSTGRES_DB=nakama
+ENV POSTGRES_PASSWORD=localdb
+
+EXPOSE 5432
+EXPOSE 8080
+
+VOLUME /var/lib/postgresql/data

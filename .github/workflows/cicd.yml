@@ -33,12 +33,27 @@ jobs:
         id: commit
         run: echo "::set-output name=hash::$(git rev-parse --short HEAD)"
       
+      # Set up Docker Buildx for using docker build/push
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.6.1
+       
       # build and push docker image 
       - name: Push Docker Image to Docker Hub
-        uses: docker/build-push-action@v5
-        with: 
-          push: true
-          tags: santa124/ror-game-server:${{steps.commit.outputs.hash}}
+        run: |
+          docker build -t santa124/postgres:12.2-alpine -f Dockerfile.postgress .
+          docker build -t santa124/nakama:3.22.0 -f Dockerfile .
+          docker push santa124/postgres:12.2-alpine
+          docker push santa124/nakama:3.22.0
+      
+      # Copy docker compose deploy and local yml file to server
+      - name: Copy files via SSH
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEV_ROR_HOST }}
+          username: ${{ secrets.DEV_ROR_USERNAME}}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "./docker-compose.deploy.yml ./local.yml"
+          target: "/root/"
       
       #deploy docker and run on remote host 
       - name: Run docker container on Remote host 
@@ -49,7 +64,6 @@ jobs:
           key: ${{ secrets.DEV_ROR_KEY }}
           script: | 
             docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_PASSWORD }}
-            docker rm -f ror-game-server || true
-            docker pull santa124/ror-game-server:${{steps.commit.outputs.hash}}
-            docker run -d --name ror-game-server -p 7349:7349 -p 7350:7350 -p 7351:7351 santa124/ror-game-server:${{steps.commit.outputs.hash}}
-          
+            cd /root/
+            docker-compose -f docker-compose.deploy.yml pull
+            docker-compose -f docker-compose.deploy.yml up -d

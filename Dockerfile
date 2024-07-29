@@ -1,4 +1,5 @@
-FROM node:alpine As node-builder
+# Stage 1: Build the Node.js project
+FROM node:alpine AS node-builder
 
 WORKDIR /backend
 

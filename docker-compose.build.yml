@@ -1,0 +1,13 @@
+version: '3'
+services:
+  postgres:
+    build:
+      context: .
+      dockerfile: Dockerfile.postgress
+    image: santa124/postgres:12.2-alpine
+
+  nakama:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: santa124/nakama:3.22.0

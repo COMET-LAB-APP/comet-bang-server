@@ -14,6 +14,13 @@ const MAX_PLAYERS = 7;
 const MIN_PLAYERS = 2;
 const BLOOD_AMOUNT = 5;
 
+// set timer constant  
+const tickRate = 1;
+const maxEmptySec = 30;
+const delaybetweenGamesSec = 5;
+const turnTimeFastSec = 20;
+const turnTimeNormalSec = 30;
+
 const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, params: {[key: string]: string}): {state: nkruntime.MatchState, tickRate: number, label: string} {
   // Determine if the match should be private based on the passed in params
   const isPrivate = params.isPrivate === "true";  
@@ -160,6 +167,66 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
       state.gameState = GameStateEnum.InProgress;
       dispatcher.broadcastMessage(OpCode.START_GAME , JSON.stringify(state))
     }
+
+    // this is starting game 
+    if (state.gameState == GameStateEnum.InProgress) {
+      // check timer turn count down 
+      if (state.deadlineRemainingTicks <= 0) {
+
+        var currentTurnPlayerId = null;
+        var currentPosition = null;        
+        // inital start first turn
+        if (state.currentTurnPlayerId === null) {
+          // finding player first position with index 0
+          for (const userId in state.players) {
+            if (state.players.hasOwnProperty(userId) && state.players[userId].position == 0) {
+              currentTurnPlayerId = userId;
+              currentPosition = state.players[userId].position;
+              logger.info(`##T inital first turn ${userId}`)
+            }
+          }
+        } else {
+          // move turn to next player 
+          // check position with move around 
+          // TODO: should check currentPosition still alive or not
+          if(state.currentPosition < (state.requiredPlayerCount - 1) ){
+            currentPosition = state.currentPosition + 1;
+          } else {
+            currentPosition = 0;
+          }
+
+          for (const userId in state.players) {
+            if (state.players.hasOwnProperty(userId) && state.players[userId].position == currentPosition) {
+              // assign currentTurnPlayerId  
+              currentTurnPlayerId = userId;
+              currentPosition = state.players[userId].position;
+            }
+          }
+        }
+
+        if (currentPosition != null && currentTurnPlayerId != null) {
+          state.currentPosition = currentPosition;
+          state.currentTurnPlayerId = currentTurnPlayerId;
+        }
+      
+        state.deadlineRemainingTicks = calculateDeadlineTicks(TimerTypeEnum.normal);
+        state.currentActionState = ActionState.DrawPhase
+        // object json message
+        let msg = {
+          currentPosition: state.currentPosition,
+          currentTurnPlayerId: state.currentTurnPlayerId,
+          turnTime: Math.floor(state.deadlineRemainingTicks / tickRate),
+          currentActionState : state.currentActionState
+        }
+        logger.info(`##T message current player turn :  ${JSON.stringify(msg)}}`)
+
+        dispatcher.broadcastMessage(OpCode.PLAYER_DRAW, JSON.stringify(msg))
+      } else {
+        // count down timer turn
+        state.deadlineRemainingTicks--;
+        logger.info(`##T message deadlineRemainingTicks : ${state.deadlineRemainingTicks}  `)
+      }
+    }
  
 
     // handle receive messages from clients 
@@ -241,4 +308,18 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
       randomCards.push(cardData[randomNumber])
     }
     return randomCards;
+  }
+  
+  // calulate turn timer
+  function calculateDeadlineTicks(timerType: TimerTypeEnum): number {
+    if (timerType === TimerTypeEnum.fast) {
+        return turnTimeFastSec * tickRate;
+    } else {
+        return turnTimeNormalSec * tickRate;
+    }
+  }
+
+  // convert time milliseconds to seconds
+  function msecToSec(n: number): number {
+    return Math.floor(n / 1000);
   }

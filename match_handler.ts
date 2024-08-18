@@ -2,14 +2,12 @@ const OpCode = {
   JOIN_GAME: 1,
   READY_GAME: 2,
   START_GAME: 3,
-  END_GAME: 4,
-  PLAYER_DRAW: 5,
-  PLAYER_ATTACK: 6,
-  PLAYER_DEFEND: 7,
-  PLAYER_TARGET: 8,
-  GAME_STATE_UPDATE: 9,
-  PING: 10,
-  LEAVE_GAME: 11,
+  PLAYER_DRAW: 4,
+  PLAYER_TARGET: 5,
+  END_GAME: 6,
+  GAME_STATE_UPDATE: 7,
+  PING: 8,
+  LEAVE_GAME: 9,
 };
 
 const MAX_PLAYERS = 7; 
@@ -28,7 +26,8 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
     requiredPlayerCount: MAX_PLAYERS,
     gameState: GameStateEnum.WaitingForPlayers,
     emptyTicks: 0,
-    joinsInProgress : 0
+    joinsInProgress : 0,
+    deadlineRemainingTicks : 0,
   };
   
      // Update the match label to surface important information for players who are searching for a match
@@ -68,7 +67,7 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
     if (state.playerCount === state.requiredPlayerCount) {
       logger.info(`is Ready call Herre : ${state}`)
       state.gameState = GameStateEnum.WaitingForPlayersReady;
-      dispatcher.broadcastMessage(OpCode.JOIN_GAME, JSON.stringify({ gameState:  state.gameState , readyCount: 0 ,  description : "GameState WaitingForPlayersReady"}) )
+      dispatcher.broadcastMessage(OpCode.READY_GAME, JSON.stringify({ gameState:  state.gameState , readyCount: 0 ,  description : "GameState WaitingForPlayersReady"}) )
     }
   
     // Update the match label
@@ -83,8 +82,8 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
   
   const matchLeave = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, dispatcher: nkruntime.MatchDispatcher, tick: number, state: nkruntime.MatchState, presences: nkruntime.Presence[]) : { state: nkruntime.MatchState } | null {
     presences.forEach(function (presence) {
-    delete(state.players[presence.userId]);
-    state.playerCount--;
+    // delete(state.players[presence.userId]); // should make this userId offline
+    // state.playerCount--;
   });
   
     return {
@@ -94,7 +93,8 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
   
   const matchLoop = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, dispatcher: nkruntime.MatchDispatcher, tick: number, state: nkruntime.MatchState, messages: nkruntime.MatchMessage[]) : { state: nkruntime.MatchState} | null {
     // If the match is empty, increment the empty ticks
-    
+    try {
+      
     logger.info("start match loop " + state.emptyTicks + "player count " + state.playerCount)
     if (state.playerCount === 0) {
       state.emptyTicks++;
@@ -127,7 +127,8 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
         dispatcher.broadcastMessage(OpCode.JOIN_GAME, JSON.stringify( { gameState:  state.gameState , description : "GameState InialtGame"}) )
       }
     }
-
+   
+    // Game start initial here
     if (state.gameState == GameStateEnum.InitialGame){
       var roleUsedNumbers : number[] = []; 
       var positionUsed : number[] = [];
@@ -140,10 +141,10 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
            roleUsedNumbers.push(roleRandomNumber);
            var role  = roles[roleRandomNumber]
            //check role if it's sherrif start position 0
-           var postion = 0;
+           var position = 0;
            if(role.id != 1){
-             postion = getRandomNumber(1, 6, positionUsed);
-             positionUsed.push(postion)
+             position = getRandomNumber(1, 6, positionUsed);
+             positionUsed.push(position)
            }
 
            var characterNumber = getRandomNumber(0, 6, characterUsed);
@@ -152,7 +153,7 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
            
            // intial cards 
            var cards = generateCards(5,mockCards);
-           state.players[userId] = {...state.players[userId], role : role, position : postion, character : character,blood: BLOOD_AMOUNT, cards : cards} 
+           state.players[userId] = {...state.players[userId], role : role, position : position, character : character,blood: BLOOD_AMOUNT, cards : cards} 
         }
         logger.info(`statePlayer: userId ${userId} ${state.players[userId]}`)
       }
@@ -179,17 +180,15 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
         case OpCode.PLAYER_DRAW : 
          //TODO : implement logic player draw
          break
-        case OpCode.PLAYER_ATTACK : 
-          //TODO : implement logic player attack
-         break;
-         case OpCode.PLAYER_DEFEND : 
-          //TODO : implement logic player defend
-         break;
    
       }
     }
     
   
+    }catch(e){
+       logger.error(`match loop crash: ${e}`)
+    } 
+    
     return {
       state
     };

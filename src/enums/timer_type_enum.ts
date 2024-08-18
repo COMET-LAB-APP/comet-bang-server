@@ -1,0 +1,4 @@
+enum TimerTypeEnum { 
+    normal,
+    fast,
+  }

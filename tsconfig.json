@@ -18,6 +18,7 @@
         "src/enums/card_type_enum.ts",
         "src/enums/game_state_enum.ts",
         "src/enums/role_type_enum.ts",
+        "src/enums/timer_type_enum.ts",
         "src/const/characters.ts",
         "src/const/card_constant.ts",
         "src/const/role_constant.ts",

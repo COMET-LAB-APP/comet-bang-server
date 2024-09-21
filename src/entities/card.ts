@@ -1,4 +1,5 @@
 interface Card {
+    id: number,
     name : string,
     type : CardTypes,
     damage ?: number,

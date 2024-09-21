@@ -23,8 +23,8 @@ const mockCards: Card[] = [
 ];
 
 const mockCardsAttackAndDefence: Card[] = [
-  { id: 1, name: "Quick Slash", type: CardTypes.Attack, damage: 1 },
-  { id: 2, name: "Heavy Blow", type: CardTypes.Attack, damage: 2 },
-  { id: 3, name: "Light Shield", type: CardTypes.Defense, defense: 1 },
-  { id: 4, name: "Iron Wall", type: CardTypes.Defense, defense: 2 }
+  { id: 21, name: "Quick Slash", type: CardTypes.Attack, damage: 1 },
+  { id: 22, name: "Heavy Blow", type: CardTypes.Attack, damage: 2 },
+  { id: 23, name: "Light Shield", type: CardTypes.Defense, defense: 1 },
+  { id: 24, name: "Iron Wall", type: CardTypes.Defense, defense: 2 }
 ];

@@ -5,5 +5,6 @@ interface PlayerState {
     character ?: Character,
     role ?: Role,
     blood ?: number,
-    cards : Card[]
+    cards : Card[],
+    isBot: boolean
   }

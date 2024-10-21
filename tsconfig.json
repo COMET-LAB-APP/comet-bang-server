@@ -24,6 +24,7 @@
         "src/const/role_constant.ts",
         "src/states/game_state.ts",
         "src/states/player_state.ts",
+        "src/entities/action_base.ts"
     ],
     "compilerOptions": {
         "target": "es5",

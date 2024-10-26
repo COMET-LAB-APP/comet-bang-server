@@ -5,67 +5,72 @@ const registerBeforeAuthenticateEmail: nkruntime.BeforeHookFunction<nkruntime.Au
     return req;
   }
 
-const sendVerificationEmailFn: nkruntime.AfterHookFunction<nkruntime.Session, nkruntime.AuthenticateEmailRequest> = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, data: nkruntime.Session, req: nkruntime.AuthenticateEmailRequest) {
-  const apiUrl = `${baseUrl}/sendVerifyEmail`
-  logger.info(`login status ${data.created} received ${apiUrl} ${ctx.userId} ${req.username} ${req.account.email} ${req.account.password}`)
-  if (data.created) {
-    // If this is true, the account was created for the first time.
-    // User Third party service to send verification email here.
-    const code = generateVerificationCode(6);
-    const payload = JSON.stringify({email : req.account.email ,code : code })
-    const response = nk.httpRequest(apiUrl, 'post', { 'content-type': 'application/json' }, payload);
-    if (response.code > 299) {
-      logger.error(`API error: ${response.body}`);
-      return JSON.stringify({ error : response.body });
-    }
-    
+const sendVerificationEmailFn: nkruntime.AfterHookFunction<nkruntime.Session, nkruntime.AuthenticateEmailRequest> = function (ctx, logger, nk, data, req) {
+  const apiUrl = `${baseUrl}/sendVerifyEmail`;
+  logger.info(`Login status: ${data.created}. Request details: ${apiUrl} | UserId: ${ctx.userId} | Username: ${req.username} | Email: ${req.account.email}`);
+
+  // Helper function to write verification data to storage
+  const writeVerificationData = (email: string | undefined, code: string) => {
     const storageObjects: nkruntime.StorageWriteRequest[] = [{
       collection: "email_verify",
       key: "authentication_email",
-      value: {email : req.account.email, verify : false, code : code},
+      value: { email, verify: false, code },
       userId: ctx.userId,
     }];
-    logger.info(`login received ${storageObjects} ${code} `)
     nk.storageWrite(storageObjects);
+    logger.info(`Verification data stored for UserId: ${ctx.userId}`);
+  };
 
-    // const dataReponse = JSON.parse(response.body);
-    // logger.info(`sendVerificationEmailFn API response: ${dataReponse}`)
+  try {
+    if (data.created) {
+      // New account creation: Send verification email
+      const code = generateVerificationCode(6);
+      writeVerificationData(req.account.email, code);
+      sendVerificationEmail(nk, logger, req.account.email, code);
+      
+      return JSON.stringify({ status: 401, message: "Please verify your email" });
+    } else {
+      // Check if verification is needed
+      const keys: nkruntime.StorageReadRequest[] = [{
+        collection: "email_verify",
+        key: "authentication_email",
+        userId: ctx.userId
+      }];
+      const objects = nk.storageRead(keys);
 
-    return JSON.stringify({ status : 401, message : "go to verify email" });
-  } else {
-    const keys: nkruntime.StorageReadRequest[] = [{
-      collection: "email_verify",
-      key: "authentication_email",
-      userId: ctx.userId  // assuming you want to fetch data for the current user
-     }];
-   logger.info(`confirmVerifyEmailRpc UserId ${ctx.userId}`)
-   const objects = nk.storageRead(keys);
+      if (objects.length === 0) {
+        logger.info("No verification data found for user.");
+        return JSON.stringify({ success: false, message: "No data found.", status: 404 });
+      }
 
-   if (objects.length === 0) {
-    logger.info(`not found`);
-    return JSON.stringify({ success: false, message: "No data found." , status: 404 });
-   }
-   logger.info(`verify is : ${objects[0].value.verify}`);
-   if (objects[0].value.verify == false){
-    const code = generateVerificationCode(6);
-    const storageObjects: nkruntime.StorageWriteRequest[] = [{
-     collection: "email_verify",
-     key: "authentication_email",
-     value: {email : req.account.email, verify : false, code : code},
-     userId: ctx.userId,
-   }];
-   const payload = JSON.stringify({email : req.account.email ,code : code })
-     const response = nk.httpRequest(apiUrl, 'post', { 'content-type': 'application/json' }, payload);
-     if (response.code > 299) {
-       logger.error(`API error: ${response.body}`);
-       return JSON.stringify({ error : response.body });
-     }
-    logger.info(`login received ${storageObjects} ${code} `)
-    nk.storageWrite(storageObjects);
- 
-   }
-   
+      const verificationData = objects[0].value;
+      if (!verificationData.verify) {
+        // Resend verification if not verified
+        const code = generateVerificationCode(6);
+        writeVerificationData(req.account.email, code);
+        sendVerificationEmail(nk, logger, req.account.email, code);
+      }
+      
+      logger.info(`User verification status: ${verificationData.verify}`);
+      return JSON.stringify({ status: 200, message: "Verification status checked" });
+    }
+  } catch (error: any) {
+    logger.error(`Error in sendVerificationEmailFn: ${error.message}`);
+    return JSON.stringify({ error: error.message, status: 500 });
   }
+};
+
+// Helper function to send verification email
+const sendVerificationEmail = ( nk: nkruntime.Nakama,logger: nkruntime.Logger, email: string | undefined, code: string) => {
+  const apiUrl = `${baseUrl}/sendVerifyEmail`
+  const payload = JSON.stringify({ email, code });
+  const response = nk.httpRequest(apiUrl, 'post', { 'content-type': 'application/json' }, payload);
+
+  if (response.code > 299) {
+    logger.error(`Failed to send verification email: ${response.body}`);
+    throw new Error(`Email API error: ${response.body}`);
+  }
+  return response;
 };
 
 

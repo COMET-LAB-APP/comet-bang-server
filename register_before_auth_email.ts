@@ -91,13 +91,7 @@ function sendVerifyEmailRpc(context: nkruntime.Context, logger: nkruntime.Logger
   logger.info(`login received ${apiUrl}`)
     let req = JSON.parse(payload);
     const code = generateVerificationCode(6);
-    const newpayload = JSON.stringify({email : req.email , code : code })
-    const response = nk.httpRequest(apiUrl, 'post', { 'content-type': 'application/json' },newpayload);
-    if (response.code > 299) {
-      logger.error(`API error: ${response.body}`);
-      return JSON.stringify({ error : response.body });
-    }
-  
+    const response = sendVerificationEmail(nk, logger, req.email, code);
     const dataReponse = JSON.parse(response.body);
     logger.info(`data API response: ${dataReponse}`)
 

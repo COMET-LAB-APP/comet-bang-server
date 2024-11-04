@@ -1,1 +1,1 @@
-enum ActionState { EffectPhase, DrawPhase, MainPhase, AttackPhase , SecondPhase, EndPhase}
+enum ActionState { EffectPhase, DrawPhase, MainPhase, AttackPhase , SecondPhase, EndPhase, EndTurn}

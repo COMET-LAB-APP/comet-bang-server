@@ -5,5 +5,6 @@ const characters: Character[] = [
     { id: 4, name: "Cat", description: "Cat can contribute new content. Curious and innovative, Cat adds new and exciting content to keep the audience engaged and informed." },
     { id: 5, name: "Cheetar", description: "Cheetar can moderate user comments and content. Fast and vigilant, Cheetar ensures that the community stays positive and respectful by moderating interactions." },
     { id: 6, name: "Bird", description: "Bird can view and analyze data. With a bird's-eye view, Bird provides insightful analysis and helps make data-driven decisions to guide the team." },
-    { id: 7, name: "Porcupine", description: "Porcupine has limited access to view content. Though limited in scope, Porcupine's perspective is valuable, offering unique insights from a different angle." }
+    { id: 7, name: "Porcupine", description: "Porcupine has limited access to view content. Though limited in scope, Porcupine's perspective is valuable, offering unique insights from a different angle." },
+    { id: 8, name: "Slimender", description: "Slimender has limited content access but offers valuable, unique insights from a different perspective." }
   ];

@@ -496,6 +496,7 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
       // start draw card drawer + ability
       state.currentActionState = ActionState.DrawPhase 
       var cards = generateCards(2, mockCardsAttackAndDefence);
+      state.players[state.currentTurnPlayerId].cards.push(...cards);
 
       state.deadlineRemainingTicks = calculateDeadlineTicks(TimerTypeEnum.normal);
       

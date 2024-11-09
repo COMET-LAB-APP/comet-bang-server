@@ -62,7 +62,7 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
 
   const matchJoin = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, dispatcher: nkruntime.MatchDispatcher, tick: number, state: nkruntime.MatchState, presences: nkruntime.Presence[]) : { state: nkruntime.MatchState } | null {
     for (const presence of presences) {
-      state.players[presence.userId] = {presence, isReady : false};
+      state.players[presence.userId] = {presence, isReady : false, isBot: false};
       state.playerCount++;
     };
     
@@ -89,10 +89,18 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
 
   
   const matchLeave = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, dispatcher: nkruntime.MatchDispatcher, tick: number, state: nkruntime.MatchState, presences: nkruntime.Presence[]) : { state: nkruntime.MatchState } | null {
+    const isOnlyBot = true;
     presences.forEach(function (presence) {
-    // delete(state.players[presence.userId]); // should make this userId offline
-    // state.playerCount--;
-  });
+      logger.info(`matchLeave : ${presence}`)
+      // delete(state.players[presence.userId]); // should make this userId offline
+      state.playerCount--;
+      state.player[presence.userId] = null;
+    });
+   
+    if(haveOnlyBotLeft(state,logger)){
+      logger.info("destroy Match ");
+      return null;
+    }
   
     return {
       state
@@ -103,7 +111,7 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
     // If the match is empty, increment the empty ticks
     try {
       
-    logger.info("start match loop " + state.emptyTicks + "player count " + state.playerCount)
+    // logger.info("start match loop " + state.emptyTicks + "player count " + state.playerCount)
     if (state.playerCount === 0) {
       state.emptyTicks++;
     } else {
@@ -323,4 +331,6 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
   // convert time milliseconds to seconds
   function msecToSec(n: number): number {
     return Math.floor(n / 1000);
+  }  function isBot(state: nkruntime.MatchState, playerId: string): boolean{
+    return state.players[playerId].isBot ?? false
   }

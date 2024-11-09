@@ -26,5 +26,7 @@ const mockCardsAttackAndDefence: Card[] = [
   { id: 21, name: "Quick Slash", type: CardTypes.Attack, damage: 1 },
   { id: 22, name: "Heavy Blow", type: CardTypes.Attack, damage: 2 },
   { id: 23, name: "Light Shield", type: CardTypes.Defense, defense: 1 },
-  { id: 24, name: "Iron Wall", type: CardTypes.Defense, defense: 2 }
+  { id: 24, name: "Iron Wall", type: CardTypes.Defense, defense: 2 },
+  { id: 25, name: "Healing Wave", type: CardTypes.Heal, heal: 1 },
+  { id: 26, name: "Life Circle", type: CardTypes.Heal, heal: 1 }
 ];

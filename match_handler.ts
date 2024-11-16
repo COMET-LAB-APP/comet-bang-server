@@ -282,7 +282,8 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
             // player send cardIds for discard
             const player = state.players[state.currentTurnPlayerId];
             let allCards = player.cards as [Card]
-            const cardsLeft = allCards.filter((card) => playerAction.discardCardIds.indexOf(card.id) === -1)
+            logger.info(`##T PLAYER_ACTION all card ${allCards.length} ${allCards}.`);
+            const cardsLeft = allCards.filter((card) => playerAction.discardCardIds.indexOf(card.id.toString()) === -1);
             state.players[state.currentTurnPlayerId].cards = cardsLeft;
             logger.info(`##T PLAYER_ACTION discard and cards left ${cardsLeft.length} ${cardsLeft}.`);
 

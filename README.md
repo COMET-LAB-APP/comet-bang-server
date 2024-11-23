@@ -40,3 +40,8 @@ or using run.sh file
     - if player should discard equal true
     - then random discard 
     - next turn
+
+## To run Ngrok server using port 7350
+```
+ngrok http 7350
+```

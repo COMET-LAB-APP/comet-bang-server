@@ -194,27 +194,53 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
             toEndPhase(state,dispatcher,logger);
             break;
           case ActionState.AttackPhase: 
+              // handle if there is current target to attack 
+              if (state.currentActionCard != null && state.currentActionCard?.targetId != null) {
+                if (state.currentActionCard?.cardOfTarget != null && ((state.currentActionCard?.card?.damage ?? 0) - (state.currentActionCard?.cardOfTarget?.damage ?? 0)) == 0) {
+                  // the target using card to defence 
+                  // the target can missed
+                  const msg: ActionBase = createActionBase(state, {
+                    playerId: state.currentTurnPlayerId,
+                    targetId: state.currentActionCard.targetId,
+                    status: TargetStatus.Missed  // Target can defence
+                  });
+                  dispatcher.broadcastMessage(OpCode.PLAYER_ACTION, JSON.stringify(msg))
+                } else {
+                  // TODO: the player target got hit 
+                  // TODO: check endGame 
+                  state.players[state.currentActionCard?.targetId].blood = state.blood - (state.currentActionCard?.card?.damage ?? 0);
+               
+                  const msg: ActionBase = createActionBase(state, {
+                    playerId: state.currentTurnPlayerId,
+                    targetId: state.currentActionCard.targetId,
+                    status: TargetStatus.Hit  // Target got hit 
+                  });
+                  dispatcher.broadcastMessage(OpCode.PLAYER_ACTION, JSON.stringify(msg))
+                  checkEndGame(state);
+                } 
+                // clear currentActionCard 
+                state.currentActionCard = null;
+              } else { 
+                // move to end phase 
+                toEndPhase(state,dispatcher,logger);
+              }
+
              break;
           case ActionState.SecondPhase: 
             break;
           case ActionState.EndPhase:
             if(playeShouldDiscardCards(state)){
               // Random discard card 
-              const player = state.players[state.currentTurnPlayerId];
-              const cardsLeft = removeRandomCards<Card>(player.cards, player.blood - player.cards.length);
-              state.players[state.currentTurnPlayerId].cards = cardsLeft;
+              const player = state.players[state.currentTurnPlayerId!];
+              const cardsLeft = removeRandomCards<Card>(player.cards,(player.blood ?? 0 )- player.cards.length);
+              state.players[state.currentTurnPlayerId!].cards = cardsLeft;
+              logger.info(`playeShouldDiscardCards of User ${cardsLeft}`);
               // send update current cards 
               state.currentActionState = ActionState.EndTurn;
-              const msg : ActionBase = {
-                currentPosition: state.currentPosition,
-                currentTurnPlayerId: state.currentTurnPlayerId,
-                turnTime: Math.floor(state.deadlineRemainingTicks / tickRate),
-                currentActionState: state.currentActionState,
-                metaData: {
+              const msg: ActionBase = createActionBase(state, {
                   playerId: state.currentTurnPlayerId,
-                  cards: state.players[state.currentTurnPlayerId].cards
-                } 
-              }
+                  cards: state.players[state.currentTurnPlayerId!].cards
+                });
               dispatcher.broadcastMessage(OpCode.PLAYER_DRAW, JSON.stringify(msg)) ;
             }
             // TODO: delay 
@@ -239,9 +265,9 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
     // handle receive messages from clients 
     // TODO: after that create seperate handle receive messages from clients 
     for (const message of messages) {
+      let senderId = message.sender.userId;
       switch (message.opCode) {
         case OpCode.READY_GAME:
-          let senderId = message.sender.userId;
           logger.info(`message of User ${senderId} is ${message.data}.`)
           // TODO: check data or create interface model to receive data 
           try {   
@@ -263,16 +289,42 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
           if (playerAction.cardId != null) {
             if(playerAction.targetId != null){
               // find card with CardId
-              const result = getCardById(playerAction.cardId);
-              if(result){
+              const card = getCardById(playerAction.cardId);
+              if(card){
                 // check card types 
                 // global attack move to next player around (clockwise)
-                let body = {
-                  cards: result[0].damage,
-                  targetId : playerAction.targetId,
-                  CardTypes : result[0].type,
+                state.currentActionState = ActionState.AttackPhase;
+                state.deadlineRemainingTicks = calculateDeadlineTicks(TimerTypeEnum.normal);
+                state.currentActionCard =  {
+                  card : card,
+                  targetId: state.currentTargetId,
+                  playerId: state.currentTurnPlayerId,
+                } as ActionCard;
+                setCurrentTarget(state as GameState, logger,playerAction.targetId);
+
+                const msg : ActionBase = {
+                  currentPosition: state.currentPosition!,
+                  currentTurnPlayerId: state.currentTurnPlayerId!,
+                  turnTime: Math.floor(state.deadlineRemainingTicks / tickRate),
+                  currentActionState: state.currentActionState,
+                  metaData: {
+                    playerId: state.currentTurnPlayerId,
+                    targetId: state.currentTargetId,
+                    card: card,
+                    damage: card.damage
+                  } 
                 }
-                dispatcher.broadcastMessage(OpCode.PLAYER_TARGET, JSON.stringify(body))   
+                // send attack to target  
+                dispatcher.broadcastMessage(OpCode.PLAYER_TARGET, JSON.stringify(msg))   
+              }
+            } else if (playerAction.type == PlayerActionType.defence && senderId == state.currentActionCard?.targetId ) {
+              // the player targetId send defence { cardId : 1 , type: PlayerActionType.defence}
+              // find card with id then update to cardofTarget
+              const card = getCardById(playerAction.cardId);
+              if(card) {
+                // set card of target 
+                state.currentActionCard.cardOfTarget = card;
+                resetTimeOut(state);
               }
             }
             // else if player actions using card without target it does mean not cardType Attack 
@@ -303,7 +355,10 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
             // TODO: should delay before Next Turn 
             nextTurn(state,logger,dispatcher)
             
-          } else {
+          } else if (playerAction.type == PlayerActionType.skip && senderId == state.currentActionCard?.targetId) {
+            // it means player target skip TODO set timeout = 0;
+            resetTimeOut(state);
+          } else  {
             // skip phase
             // emit player draw to next player 
             // skip mainphase or not 
@@ -543,6 +598,34 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
     dispatcher.broadcastMessage(OpCode.PLAYER_DRAW, JSON.stringify(msg))
   }
 
+  function toAttackPhase(state: nkruntime.MatchState, dispatcher: nkruntime.MatchDispatcher,logger: nkruntime.Logger ) {
+    state.deadlineRemainingTicks = calculateDeadlineTicks(TimerTypeEnum.normal) + 5;
+    state.currentActionState = ActionState.AttackPhase
+    // object json message
+    let msg : ActionBase = {
+      currentPosition: state.currentPosition,
+      currentTurnPlayerId: state.currentTurnPlayerId,
+      turnTime: Math.floor(state.deadlineRemainingTicks / tickRate),
+      currentActionState : state.currentActionState
+    }
+    logger.info(`##T Attack Phase:  ${JSON.stringify(msg)}}`)
+
+    dispatcher.broadcastMessage(OpCode.PLAYER_DRAW, JSON.stringify(msg))
+  }
+
+  function createActionBase(
+    state: nkruntime.MatchState,  
+    metaData?: {[key: string]: any}
+  ): ActionBase {
+    return {
+      currentPosition: state.currentPosition!,
+      currentTurnPlayerId: state.currentTurnPlayerId!,
+      turnTime: Math.floor(state.deadlineRemainingTicks / state.tickRate),
+      currentActionState: state.currentActionState,
+      metaData,
+    };
+  }
+
   function removeRandomCards<T>(array: T[], count: number): T[] {
     if (count >= array.length) {
       // If the count is greater than or equal to the array length, return an empty array.
@@ -559,12 +642,27 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
     return array.slice(count);
   }
   
-  function getCardById(id: number): Card[] {
-    const filteredCards: Card[] = [
-      ...mockCards.filter(card => card.id === id),
-      ...mockCardsAttackAndDefence.filter(card => card.id === id)
-    ];
-    return filteredCards;
+  function getCardById(id: number): Card | null {
+    for (var i = 0; i < mockCards.length; i++) {
+      if (mockCards[i].id === id) {
+        return mockCards[i];
+      }
+    }
+    for (var j = 0; j < mockCardsAttackAndDefence.length; j++) {
+      if (mockCardsAttackAndDefence[j].id === id) {
+        return mockCardsAttackAndDefence[j];
+      }
+    }
+    return null;
+  }
+  
+  function resetTimeOut(state: nkruntime.MatchState) {
+    state.deadlineRemainingTicks  = 0;
+  }
+
+  function checkEndGame(state: nkruntime.MatchState) : boolean {
+    //TODO: create method checkend Game 
+    return false;
   }
 
 
@@ -578,6 +676,10 @@ function haveOnlyBotLeft(state: nkruntime.MatchState,logger: nkruntime.Logger,  
     } 
   }
   return true;
+}
+function setCurrentTarget(state: GameState, logger: nkruntime.Logger, targetId: string){
+  state.currentTargetId = targetId;
+  logger.info(`set current Target ${state.currentTargetId}`);
 }
 /* 
   TimeOut 

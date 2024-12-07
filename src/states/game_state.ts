@@ -9,9 +9,11 @@ interface GameState extends nkruntime.MatchState{
   // timer Turn each turn will set this variable
   deadlineRemainingTicks: number,
   // current turn of player id 
-  currentTurnPlayerId ?: string,
+  currentTurnPlayerId ?: string | null,
   // current turn of position 
-  currentPosition ?: number,
-  //current action state
-  currentActionState ?: ActionState,
+  currentPosition ?: number | null,
+  // current action state
+  currentActionState ?: ActionState | null,
+  // current target 
+  currentActionCard ?: ActionCard | null,
 }

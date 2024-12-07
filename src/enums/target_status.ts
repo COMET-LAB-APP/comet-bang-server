@@ -1,0 +1,4 @@
+enum TargetStatus {
+    Missed, 
+    Hit,
+}

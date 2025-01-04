@@ -21,6 +21,7 @@ const maxEmptySec = 30;
 const delaybetweenGamesSec = 5;
 const turnTimeFastSec = 20;
 const turnTimeNormalSec = 30;
+const turnTimeFortestingSec = 10;
 
 const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, params: {[key: string]: string}): {state: nkruntime.MatchState, tickRate: number, label: string} {
   // Determine if the match should be private based on the passed in params
@@ -208,6 +209,7 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
                 } else {
                   // TODO: the player target got hit 
                   // TODO: check endGame 
+                  // TODO: need to calculate time for delay after got hit 
                   state.players[state.currentActionCard?.targetId].blood = state.blood - (state.currentActionCard?.card?.damage ?? 0);
                
                   const msg: ActionBase = createActionBase(state, {
@@ -257,7 +259,7 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
       } else {
         // count down timer turn
         state.deadlineRemainingTicks--;
-        logger.info(`##T message deadlineRemainingTicks : ${state.deadlineRemainingTicks}  `)
+        logger.info(`##Time count : ${state.deadlineRemainingTicks}  `);
       }
     }
  
@@ -294,13 +296,14 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
                 // check card types 
                 // global attack move to next player around (clockwise)
                 state.currentActionState = ActionState.AttackPhase;
-                state.deadlineRemainingTicks = calculateDeadlineTicks(TimerTypeEnum.normal);
+                state.deadlineRemainingTicks = calculateDeadlineTicks(TimerTypeEnum.testing);
+                setCurrentTarget(state as GameState, logger,playerAction.targetId);
                 state.currentActionCard =  {
                   card : card,
                   targetId: state.currentTargetId,
                   playerId: state.currentTurnPlayerId,
                 } as ActionCard;
-                setCurrentTarget(state as GameState, logger,playerAction.targetId);
+               
 
                 const msg : ActionBase = {
                   currentPosition: state.currentPosition!,
@@ -310,12 +313,13 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
                   metaData: {
                     playerId: state.currentTurnPlayerId,
                     targetId: state.currentTargetId,
-                    card: card,
-                    damage: card.damage
+                    card: card
                   } 
                 }
                 // send attack to target  
                 dispatcher.broadcastMessage(OpCode.PLAYER_TARGET, JSON.stringify(msg))   
+              } else{
+                logger.info(`## Notfound card`);
               }
             } else if (playerAction.type == PlayerActionType.defence && senderId == state.currentActionCard?.targetId ) {
               // the player targetId send defence { cardId : 1 , type: PlayerActionType.defence}
@@ -449,8 +453,10 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
   function calculateDeadlineTicks(timerType: TimerTypeEnum): number {
     if (timerType === TimerTypeEnum.fast) {
         return turnTimeFastSec * tickRate;
-    } else {
+    } else if (timerType === TimerTypeEnum.normal) {
         return turnTimeNormalSec * tickRate;
+    } else {
+        return turnTimeFortestingSec * tickRate;
     }
   }
 
@@ -584,7 +590,7 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
   }
   
   function toEndPhase(state: nkruntime.MatchState, dispatcher: nkruntime.MatchDispatcher,logger: nkruntime.Logger ) {
-    state.deadlineRemainingTicks = calculateDeadlineTicks(TimerTypeEnum.normal);
+    state.deadlineRemainingTicks = calculateDeadlineTicks(TimerTypeEnum.normal) + 5;
     state.currentActionState = ActionState.EndPhase
     // object json message
     let msg : ActionBase = {
@@ -620,7 +626,7 @@ const matchInit = function (ctx: nkruntime.Context, logger: nkruntime.Logger, nk
     return {
       currentPosition: state.currentPosition!,
       currentTurnPlayerId: state.currentTurnPlayerId!,
-      turnTime: Math.floor(state.deadlineRemainingTicks / state.tickRate),
+      turnTime: Math.floor(state.deadlineRemainingTicks / tickRate),
       currentActionState: state.currentActionState,
       metaData,
     };
